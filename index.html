@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reel — visual ffmpeg console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="tape-noise" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◈</span>
+    <span class="brand-name">REEL</span>
+    <span class="brand-sub">/ signal console</span>
+  </div>
+  <div class="mode-switch" role="tablist" aria-label="Interface mode">
+    <button class="mode-btn active" id="mode-basic" role="tab" aria-selected="true">BASIC</button>
+    <button class="mode-btn" id="mode-advanced" role="tab" aria-selected="false">ADVANCED</button>
+  </div>
+</header>
+
+<main class="console">
+
+  <!-- INPUT BAY -->
+  <section class="bay bay-input" aria-label="File input">
+    <div class="bay-label"><span class="bay-index">01</span> INPUT</div>
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a video or audio file">
+      <input type="file" id="file-input" accept="video/*,audio/*" hidden />
+      <div class="dropzone-inner" id="dropzone-empty">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6V26M20 6L12 14M20 6L28 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 28V32C6 33.1 6.9 34 8 34H32C33.1 34 34 33.1 34 32V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p class="drop-title">Drop a file, or click to browse</p>
+        <p class="drop-sub">Video or audio — MP4, MOV, MKV, WAV, MP3, FLAC and more</p>
+      </div>
+      <div class="dropzone-filled" id="dropzone-filled" hidden>
+        <div class="file-meta">
+          <div class="file-icon" id="file-type-icon">▶</div>
+          <div>
+            <p class="file-name" id="file-name">—</p>
+            <p class="file-details" id="file-details">—</p>
+          </div>
+        </div>
+        <button class="ghost-btn" id="clear-file">REMOVE</button>
+      </div>
+    </div>
+    <p class="expiry-note">Files are processed and auto-deleted 30 minutes after upload. Nothing is stored long-term.</p>
+  </section>
+
+  <!-- SETTINGS BAY -->
+  <section class="bay bay-settings" aria-label="Compression settings">
+    <div class="bay-label"><span class="bay-index">02</span> SETTINGS</div>
+
+    <div class="settings-grid" id="settings-grid">
+      <!-- populated by app.js -->
+    </div>
+  </section>
+
+  <!-- EXPLAIN BAY -->
+  <section class="bay bay-explain" aria-label="Setting explanation">
+    <div class="bay-label"><span class="bay-index">03</span> WHAT THIS DOES</div>
+    <div class="explain-panel" id="explain-panel">
+      <p class="explain-title" id="explain-title">Hover or focus a control</p>
+      <p class="explain-body" id="explain-body">Explanations for whatever setting you're touching will show up here — what it changes, the range of sane values, and when you'd actually want to adjust it.</p>
+      <div class="explain-flag" id="explain-flag" hidden>
+        <span class="flag-label">ffmpeg equivalent</span>
+        <code id="explain-flag-code">-crf 23</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- OUTPUT BAY -->
+  <section class="bay bay-output" aria-label="Output and processing">
+    <div class="bay-label"><span class="bay-index">04</span> OUTPUT</div>
+
+    <button class="run-btn" id="run-btn" disabled>
+      <span class="run-label">RUN COMPRESSION</span>
+      <span class="run-sub" id="run-cost-est">—</span>
+    </button>
+
+    <div class="progress-wrap" id="progress-wrap" hidden>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <p class="progress-text" id="progress-text">Uploading…</p>
+    </div>
+
+    <div class="result-card" id="result-card" hidden>
+      <div class="result-row">
+        <div>
+          <p class="result-title">Done</p>
+          <p class="result-sub" id="result-size">—</p>
+        </div>
+        <div class="result-actions">
+          <a class="primary-btn" id="download-link" href="#" download>DOWNLOAD</a>
+        </div>
+      </div>
+      <div class="countdown-row">
+        <span class="countdown-dot"></span>
+        <span id="countdown-text">Deletes automatically in 30:00</span>
+      </div>
+    </div>
+
+    <div class="error-card" id="error-card" hidden>
+      <p class="error-title">Something went wrong</p>
+      <p class="error-body" id="error-body">—</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Runs on Cloudinary transformations, signed via a Cloudflare Worker. No files retained beyond 30 minutes.</p>
+</footer>
+
+<script src="presets.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
