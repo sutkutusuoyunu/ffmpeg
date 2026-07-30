@@ -3,33 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Reel — visual ffmpeg console</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>FFmpeg — Video &amp; Audio Compressor</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<canvas id="stars"></canvas>
 
-<div class="tape-noise" aria-hidden="true"></div>
+<div class="wrap">
+  <a class="back" href="https://sutkutusuoyunu.github.io/">← Back</a>
 
-<header class="topbar">
-  <div class="brand">
-    <span class="brand-mark">◈</span>
-    <span class="brand-name">REEL</span>
-    <span class="brand-sub">/ signal console</span>
-  </div>
-  <div class="mode-switch" role="tablist" aria-label="Interface mode">
-    <button class="mode-btn active" id="mode-basic" role="tab" aria-selected="true">BASIC</button>
-    <button class="mode-btn" id="mode-advanced" role="tab" aria-selected="false">ADVANCED</button>
-  </div>
-</header>
+  <header class="hero">
+    <h1 class="grad">FFmpeg</h1>
+    <p class="eyebrow">Video &amp; Audio Compressor</p>
+    <div class="hero-divider"></div>
+    <div class="mode-switch" role="tablist" aria-label="Interface mode">
+      <button class="mode-btn active" id="mode-basic" role="tab" aria-selected="true">BASIC</button>
+      <button class="mode-btn" id="mode-advanced" role="tab" aria-selected="false">ADVANCED</button>
+    </div>
+  </header>
 
-<main class="console">
-
-  <!-- INPUT BAY -->
-  <section class="bay bay-input" aria-label="File input">
-    <div class="bay-label"><span class="bay-index">01</span> INPUT</div>
+  <!-- INPUT -->
+  <div class="panel">
+    <h2>Input</h2>
     <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a video or audio file">
       <input type="file" id="file-input" accept="video/*,audio/*" hidden />
       <div class="dropzone-inner" id="dropzone-empty">
@@ -48,24 +43,23 @@
             <p class="file-details" id="file-details">—</p>
           </div>
         </div>
-        <button class="ghost-btn" id="clear-file">REMOVE</button>
+        <button class="ghost" id="clear-file">REMOVE</button>
       </div>
     </div>
     <p class="expiry-note">Files are processed and auto-deleted 30 minutes after upload. Nothing is stored long-term.</p>
-  </section>
+  </div>
 
-  <!-- SETTINGS BAY -->
-  <section class="bay bay-settings" aria-label="Compression settings">
-    <div class="bay-label"><span class="bay-index">02</span> SETTINGS</div>
-
+  <!-- SETTINGS -->
+  <div class="panel">
+    <h2>Settings</h2>
     <div class="settings-grid" id="settings-grid">
       <!-- populated by app.js -->
     </div>
-  </section>
+  </div>
 
-  <!-- EXPLAIN BAY -->
-  <section class="bay bay-explain" aria-label="Setting explanation">
-    <div class="bay-label"><span class="bay-index">03</span> WHAT THIS DOES</div>
+  <!-- EXPLAIN -->
+  <div class="panel">
+    <h2>What This Does</h2>
     <div class="explain-panel" id="explain-panel">
       <p class="explain-title" id="explain-title">Hover or focus a control</p>
       <p class="explain-body" id="explain-body">Explanations for whatever setting you're touching will show up here — what it changes, the range of sane values, and when you'd actually want to adjust it.</p>
@@ -74,11 +68,11 @@
         <code id="explain-flag-code">-crf 23</code>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- OUTPUT BAY -->
-  <section class="bay bay-output" aria-label="Output and processing">
-    <div class="bay-label"><span class="bay-index">04</span> OUTPUT</div>
+  <!-- OUTPUT -->
+  <div class="panel output-panel">
+    <h2 style="align-self:flex-start;">Output</h2>
 
     <button class="run-btn" id="run-btn" disabled>
       <span class="run-label">RUN COMPRESSION</span>
@@ -110,13 +104,50 @@
       <p class="error-title">Something went wrong</p>
       <p class="error-body" id="error-body">—</p>
     </div>
-  </section>
+  </div>
 
-</main>
+  <footer>
+    <p>Runs on Cloudinary transformations, signed via a Cloudflare Worker. No files retained beyond 30 minutes.</p>
+  </footer>
+</div>
 
-<footer class="footer">
-  <p>Runs on Cloudinary transformations, signed via a Cloudflare Worker. No files retained beyond 30 minutes.</p>
-</footer>
+<script>
+// starfield background — same treatment as the forum page
+(function(){
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let w, h, stars;
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    const count = Math.floor((w * h) / 9000);
+    stars = Array.from({ length: count }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.1 + 0.2,
+      a: Math.random() * 0.6 + 0.15,
+      tw: Math.random() * 0.02 + 0.005,
+    }));
+  }
+  function frame(){
+    ctx.clearRect(0, 0, w, h);
+    for (const s of stars){
+      s.a += s.tw;
+      const alpha = 0.3 + Math.abs(Math.sin(s.a)) * 0.5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(232,232,236,${alpha})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    requestAnimationFrame(frame);
+  }
+})();
+</script>
 
 <script src="presets.js"></script>
 <script src="app.js"></script>
