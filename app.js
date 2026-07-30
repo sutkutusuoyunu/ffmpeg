@@ -6,7 +6,7 @@
  *
  * >>> CONFIGURE THIS <<<
  */
-const WORKER_URL = "https://worker617.artful617.workers.dev";
+const WORKER_URL = "https://YOUR-WORKER-SUBDOMAIN.workers.dev"; // <-- replace after deploying the Worker
 
 const state = {
   file: null,
@@ -98,14 +98,41 @@ function buildControlRow(control, tier) {
       if (opt.value === control.default) optionEl.selected = true;
       select.appendChild(optionEl);
     });
+    controlWrap.appendChild(select);
+
+    // Optional custom-value input, shown only when "custom" is selected.
+    let customInput = null;
+    if (control.allowCustom) {
+      customInput = document.createElement("input");
+      customInput.type = "number";
+      customInput.min = control.customMin ?? 0;
+      customInput.max = control.customMax ?? 100000;
+      customInput.placeholder = "kbps";
+      customInput.style.marginTop = "6px";
+      customInput.hidden = true;
+      customInput.addEventListener("input", () => {
+        if (customInput.value !== "") {
+          state.values[control.id] = customInput.value;
+          updateRunButton();
+        }
+      });
+      controlWrap.appendChild(customInput);
+    }
+
     select.addEventListener("change", () => {
-      state.values[control.id] = select.value;
+      if (control.allowCustom && select.value === "custom") {
+        customInput.hidden = false;
+        customInput.focus();
+        // Don't overwrite state.values yet — wait for a real number.
+      } else {
+        if (customInput) customInput.hidden = true;
+        state.values[control.id] = select.value;
+      }
       if (control.id === "preset") applyPreset(select.value);
       updateRunButton();
     });
     select.addEventListener("focus", () => showExplain(control));
     select.addEventListener("mouseenter", () => showExplain(control));
-    controlWrap.appendChild(select);
   } else if (control.type === "toggle") {
     const toggle = document.createElement("div");
     toggle.className = "toggle" + (control.default ? " on" : "");
@@ -260,7 +287,6 @@ function updateRunButton() {
 /* ---------------------------------------------------------
    BUILD CLOUDINARY TRANSFORMATION STRING
 --------------------------------------------------------- */
-
 function buildTransformation() {
   const v = state.values;
   const parts = [];
@@ -268,18 +294,7 @@ function buildTransformation() {
   // quality (0-100 UI) -> Cloudinary q_ param (also 0-100, or q_auto)
   if (v.quality !== undefined && v.quality !== "") parts.push(`q_${v.quality}`);
 
-  // Bitrate: Cloudinary's br_ av is officially "not supported by our SDKs"
-  // and its hash-style syntax is fragile over HTTP (parentheses/semicolons
-  // get mis-parsed). Simplest robust approach: use a single br_ value,
-  // which Cloudinary applies to both video and audio when only one is
-  // given. Prefer the video bitrate since it dominates file size; fall
-  // back to audio bitrate if that's the only one set.
-  if (v.videoBitrate) {
-    parts.push(`br_${v.videoBitrate}k`);
-  } else if (v.audioBitrate) {
-    parts.push(`br_${v.audioBitrate}k`);
-  }
-
+  if (v.videoBitrate) parts.push(`br_${v.videoBitrate}k`);
   if (v.scale) parts.push(`h_${v.scale},c_limit`);
   if (v.fps) parts.push(`fps_${v.fps}`);
 
@@ -288,15 +303,9 @@ function buildTransformation() {
     parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
   }
 
-  // Audio codec is its own param — no bitrate suffix, that caused the
-  // earlier "Unsupported codec aac:128k" 400.
-  if (v.audioCodec && v.audioCodec !== "auto") {
-    parts.push(`ac_${v.audioCodec}`);
-  }
-
+  if (v.audioBitrate) parts.push(`ac_${v.audioCodec && v.audioCodec !== "auto" ? v.audioCodec : "aac"},br_${v.audioBitrate}k`);
   if (v.audioSampleRate) parts.push(`af_${v.audioSampleRate}`);
-  // Note: forcing mono/stereo isn't a simple named Cloudinary param —
-  // omitted, since it was previously colliding with ac_ anyway.
+  if (v.audioChannels) parts.push(`ac_${v.audioChannels === "1" ? "mono" : "stereo"}`);
 
   if (v.trimStart) parts.push(`so_${v.trimStart}`);
   if (v.trimEnd) parts.push(`eo_${v.trimEnd}`);
