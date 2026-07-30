@@ -268,7 +268,17 @@ function buildTransformation() {
   // quality (0-100 UI) -> Cloudinary q_ param (also 0-100, or q_auto)
   if (v.quality !== undefined && v.quality !== "") parts.push(`q_${v.quality}`);
 
-  if (v.videoBitrate) parts.push(`br_${v.videoBitrate}k`);
+  // Bitrate: Cloudinary's br_ applies one value to both video+audio.
+  // To set them independently, the real syntax is br_av (NOT a second
+  // br_ and NOT codec:bitrate — both of those return 400s).
+  if (v.videoBitrate && v.audioBitrate) {
+    parts.push(`br_av:video(value_${v.videoBitrate}k);audio_(value_${v.audioBitrate}k)`);
+  } else if (v.videoBitrate) {
+    parts.push(`br_${v.videoBitrate}k`);
+  } else if (v.audioBitrate) {
+    parts.push(`br_${v.audioBitrate}k`);
+  }
+
   if (v.scale) parts.push(`h_${v.scale},c_limit`);
   if (v.fps) parts.push(`fps_${v.fps}`);
 
@@ -277,19 +287,15 @@ function buildTransformation() {
     parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
   }
 
-  // Audio codec + bitrate must live in ONE ac_ param (e.g. ac_aac:64k),
-  // not a separate br_ — Cloudinary rejects duplicate br_/ac_ keys in
-  // the same transformation with a 400.
-  if (v.audioBitrate) {
-    const codec = v.audioCodec && v.audioCodec !== "auto" ? v.audioCodec : "aac";
-    parts.push(`ac_${codec}:${v.audioBitrate}k`);
-  } else if (v.audioCodec && v.audioCodec !== "auto") {
+  // Audio codec is its own param — no bitrate suffix here, that's what
+  // was causing the "Unsupported codec aac:128k" 400.
+  if (v.audioCodec && v.audioCodec !== "auto") {
     parts.push(`ac_${v.audioCodec}`);
   }
 
   if (v.audioSampleRate) parts.push(`af_${v.audioSampleRate}`);
-  // Note: forcing mono/stereo isn't a simple named Cloudinary param and
-  // was colliding with the ac_ codec key above — omitted for now.
+  // Note: forcing mono/stereo isn't a simple named Cloudinary param —
+  // omitted, since it was previously colliding with ac_ anyway.
 
   if (v.trimStart) parts.push(`so_${v.trimStart}`);
   if (v.trimEnd) parts.push(`eo_${v.trimEnd}`);
