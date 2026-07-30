@@ -268,12 +268,13 @@ function buildTransformation() {
   // quality (0-100 UI) -> Cloudinary q_ param (also 0-100, or q_auto)
   if (v.quality !== undefined && v.quality !== "") parts.push(`q_${v.quality}`);
 
-  // Bitrate: Cloudinary's br_ applies one value to both video+audio.
-  // To set them independently, the real syntax is br_av (NOT a second
-  // br_ and NOT codec:bitrate — both of those return 400s).
-  if (v.videoBitrate && v.audioBitrate) {
-    parts.push(`br_av:video(value_${v.videoBitrate}k);audio_(value_${v.audioBitrate}k)`);
-  } else if (v.videoBitrate) {
+  // Bitrate: Cloudinary's br_ av is officially "not supported by our SDKs"
+  // and its hash-style syntax is fragile over HTTP (parentheses/semicolons
+  // get mis-parsed). Simplest robust approach: use a single br_ value,
+  // which Cloudinary applies to both video and audio when only one is
+  // given. Prefer the video bitrate since it dominates file size; fall
+  // back to audio bitrate if that's the only one set.
+  if (v.videoBitrate) {
     parts.push(`br_${v.videoBitrate}k`);
   } else if (v.audioBitrate) {
     parts.push(`br_${v.audioBitrate}k`);
@@ -287,8 +288,8 @@ function buildTransformation() {
     parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
   }
 
-  // Audio codec is its own param — no bitrate suffix here, that's what
-  // was causing the "Unsupported codec aac:128k" 400.
+  // Audio codec is its own param — no bitrate suffix, that caused the
+  // earlier "Unsupported codec aac:128k" 400.
   if (v.audioCodec && v.audioCodec !== "auto") {
     parts.push(`ac_${v.audioCodec}`);
   }
