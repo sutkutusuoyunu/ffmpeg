@@ -260,6 +260,7 @@ function updateRunButton() {
 /* ---------------------------------------------------------
    BUILD CLOUDINARY TRANSFORMATION STRING
 --------------------------------------------------------- */
+
 function buildTransformation() {
   const v = state.values;
   const parts = [];
@@ -276,9 +277,19 @@ function buildTransformation() {
     parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
   }
 
-  if (v.audioBitrate) parts.push(`ac_${v.audioCodec && v.audioCodec !== "auto" ? v.audioCodec : "aac"},br_${v.audioBitrate}k`);
+  // Audio codec + bitrate must live in ONE ac_ param (e.g. ac_aac:64k),
+  // not a separate br_ — Cloudinary rejects duplicate br_/ac_ keys in
+  // the same transformation with a 400.
+  if (v.audioBitrate) {
+    const codec = v.audioCodec && v.audioCodec !== "auto" ? v.audioCodec : "aac";
+    parts.push(`ac_${codec}:${v.audioBitrate}k`);
+  } else if (v.audioCodec && v.audioCodec !== "auto") {
+    parts.push(`ac_${v.audioCodec}`);
+  }
+
   if (v.audioSampleRate) parts.push(`af_${v.audioSampleRate}`);
-  if (v.audioChannels) parts.push(`ac_${v.audioChannels === "1" ? "mono" : "stereo"}`);
+  // Note: forcing mono/stereo isn't a simple named Cloudinary param and
+  // was colliding with the ac_ codec key above — omitted for now.
 
   if (v.trimStart) parts.push(`so_${v.trimStart}`);
   if (v.trimEnd) parts.push(`eo_${v.trimEnd}`);
