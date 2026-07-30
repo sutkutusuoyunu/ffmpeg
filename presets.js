@@ -129,8 +129,12 @@ const SETTINGS_SCHEMA = [
           { value: "192", label: "192 kbps" },
           { value: "256", label: "256 kbps — high quality" },
           { value: "320", label: "320 kbps — max MP3" },
+          { value: "custom", label: "Custom…" },
         ],
         default: "128",
+        allowCustom: true,
+        customMin: 8,
+        customMax: 512,
         explain: {
           title: "Audio bitrate",
           body: "Data rate for the audio track. 128kbps is transparent for most music on typical speakers/earbuds; 64–96kbps is plenty for spoken word. This is independent of the video bitrate above.",
