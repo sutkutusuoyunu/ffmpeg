@@ -6,7 +6,7 @@
  *
  * >>> CONFIGURE THIS <<<
  */
-const WORKER_URL = "https://YOUR-WORKER-SUBDOMAIN.workers.dev"; // <-- replace after deploying the Worker
+const WORKER_URL = "https://worker617.artful617.workers.dev";
 
 const state = {
   file: null,
