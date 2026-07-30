@@ -294,7 +294,18 @@ function buildTransformation() {
   // quality (0-100 UI) -> Cloudinary q_ param (also 0-100, or q_auto)
   if (v.quality !== undefined && v.quality !== "") parts.push(`q_${v.quality}`);
 
-  if (v.videoBitrate) parts.push(`br_${v.videoBitrate}k`);
+  // Bitrate: Cloudinary's br_ av is officially "not supported by our SDKs"
+  // and its hash-style syntax is fragile over HTTP. Simplest robust
+  // approach: use a single br_ value, which Cloudinary applies to both
+  // video and audio when only one is given. Prefer the video bitrate
+  // since it dominates file size; fall back to audio bitrate if that's
+  // the only one set.
+  if (v.videoBitrate) {
+    parts.push(`br_${v.videoBitrate}k`);
+  } else if (v.audioBitrate && v.audioBitrate !== "custom") {
+    parts.push(`br_${v.audioBitrate}k`);
+  }
+
   if (v.scale) parts.push(`h_${v.scale},c_limit`);
   if (v.fps) parts.push(`fps_${v.fps}`);
 
@@ -303,9 +314,15 @@ function buildTransformation() {
     parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
   }
 
-  if (v.audioBitrate) parts.push(`ac_${v.audioCodec && v.audioCodec !== "auto" ? v.audioCodec : "aac"},br_${v.audioBitrate}k`);
+  // Audio codec is its own param — no bitrate suffix, that caused the
+  // earlier "Unsupported codec aac:128k" 400.
+  if (v.audioCodec && v.audioCodec !== "auto") {
+    parts.push(`ac_${v.audioCodec}`);
+  }
+
   if (v.audioSampleRate) parts.push(`af_${v.audioSampleRate}`);
-  if (v.audioChannels) parts.push(`ac_${v.audioChannels === "1" ? "mono" : "stereo"}`);
+  // Note: forcing mono/stereo isn't a simple named Cloudinary param —
+  // omitted, since it was previously colliding with ac_ anyway.
 
   if (v.trimStart) parts.push(`so_${v.trimStart}`);
   if (v.trimEnd) parts.push(`eo_${v.trimEnd}`);
