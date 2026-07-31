@@ -307,7 +307,20 @@ document.getElementById("clear-file").addEventListener("click", (e) => {
   updateRunButton();
 });
 
+// Cloudinary's free plan hard-caps video/audio uploads at 100MB, regardless
+// of upload method (this includes chunked uploads) — going over doesn't
+// give a clean error, it just drops the connection, which XHR reports as a
+// generic "network error". Catch it here instead so people get a real reason.
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
 function setFile(file) {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    showError(`This file is ${sizeMB} MB — the current plan only supports files up to 100 MB. Try trimming the file first, or compressing it in smaller pieces.`);
+    fileInput.value = "";
+    return;
+  }
+
   state.file = file;
   document.getElementById("dropzone-empty").hidden = true;
   document.getElementById("dropzone-filled").hidden = false;
