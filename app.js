@@ -23,6 +23,7 @@ function renderSettings() {
   SETTINGS_SCHEMA.forEach((group) => {
     const groupEl = document.createElement("div");
     groupEl.className = "setting-group" + (group.tier === "advanced" ? " advanced-only" : "");
+    groupEl.dataset.group = group.group;
     if (group.tier === "advanced") groupEl.classList.add("advanced-group");
 
     const header = document.createElement("div");
@@ -216,6 +217,16 @@ function syncAudioBitrateAvailability() {
   row.title = isAudioOnly
     ? ""
     : "Only applies to audio-only output formats (MP3/WAV/FLAC/AAC) — video bitrate takes priority for video formats.";
+
+  // Hide the entire video-only groups too — showing "Resolution" or
+  // "Video bitrate" controls for an mp3 output is misleading since
+  // there's no video stream for them to apply to at all.
+  const VIDEO_GROUP_NAMES = ["Video", "Video — Advanced"];
+  document.querySelectorAll(".setting-group").forEach((groupEl) => {
+    if (VIDEO_GROUP_NAMES.includes(groupEl.dataset.group)) {
+      groupEl.classList.toggle("group-hidden", isAudioOnly);
+    }
+  });
 }
 
 /* ---------------------------------------------------------
