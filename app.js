@@ -472,11 +472,15 @@ document.getElementById("run-btn").addEventListener("click", async () => {
       }),
     });
 
-    showProgress("Applying settings…", 90);
-
     const transformation = buildTransformation();
     const format = state.values.format || "mp4";
     const transformedUrl = buildDeliveryUrl(sign.cloud_name, uploadResult.public_id, uploadResult.resource_type, transformation, format);
+
+    // Cloudinary doesn't actually transcode on-the-fly URLs until they're
+    // first requested — the URL existing is not the same as the file being
+    // ready. Poll it ourselves so the progress bar reflects real encoding
+    // time instead of lying and saying "Done" before any work has happened.
+    await waitForTransformationReady(transformedUrl);
 
     showProgress("Done", 100);
     showResult(transformedUrl, uploadResult);
@@ -484,6 +488,71 @@ document.getElementById("run-btn").addEventListener("click", async () => {
     showError(err.message || "Upload failed. Check your connection and try again.");
   }
 });
+
+// Polls the Cloudinary delivery URL with HEAD requests until it resolves
+// (200 = encoding finished and cached) or we give up. Cloudinary holds the
+// response open on the very first request while it transcodes, so a HEAD
+// request effectively "waits" for the encode — we just also want to keep
+// the UI honest and responsive while that's happening, and recover if the
+// browser/connection drops that long-held request.
+function waitForTransformationReady(url, { timeoutMs = 10 * 60 * 1000, pollIntervalMs = 3000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    let settled = false;
+
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+
+    const describeElapsed = () => {
+      const secs = Math.round((Date.now() - startedAt) / 1000);
+      return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+    };
+
+    // Progress here is inherently a guess — Cloudinary gives no % — so we
+    // creep the bar toward (but never reach) 99% the longer this takes,
+    // rather than freezing at one number or falsely hitting 100 early.
+    const updateBar = () => {
+      const elapsed = Date.now() - startedAt;
+      const pct = 90 + 9 * (1 - Math.exp(-elapsed / 20000)); // approaches 99
+      showProgress(`Encoding… (${describeElapsed()} elapsed)`, pct, true);
+    };
+
+    const attempt = () => {
+      if (Date.now() - startedAt > timeoutMs) {
+        fail(new Error("Encoding is taking much longer than expected. Your file may still finish — try the direct link again in a minute, or reduce how extreme your settings are (e.g. raise a very low bitrate)."));
+        return;
+      }
+      updateBar();
+
+      fetch(url, { method: "HEAD", cache: "no-store" })
+        .then((res) => {
+          if (res.ok) {
+            succeed();
+          } else if (res.status === 423 || res.status === 202) {
+            // Still processing — Cloudinary-style "come back later" statuses.
+            setTimeout(attempt, pollIntervalMs);
+          } else {
+            fail(new Error(`Encoding failed (server returned ${res.status}). Try adjusting your settings.`));
+          }
+        })
+        .catch(() => {
+          // Transient network hiccup (or the browser timing out a long-held
+          // request) — don't give up immediately, just retry.
+          setTimeout(attempt, pollIntervalMs);
+        });
+    };
+
+    attempt();
+  });
+}
 
 function uploadWithProgress(url, formData, onProgress) {
   return new Promise((resolve, reject) => {
@@ -521,9 +590,11 @@ function resetOutputPanels() {
   if (countdownInterval) clearInterval(countdownInterval);
 }
 
-function showProgress(text, pct) {
+function showProgress(text, pct, isEncoding = false) {
   document.getElementById("progress-text").textContent = text;
-  document.getElementById("progress-fill").style.width = pct + "%";
+  const fill = document.getElementById("progress-fill");
+  fill.style.width = pct + "%";
+  fill.classList.toggle("is-encoding", isEncoding);
 }
 
 function showResult(url, uploadResult) {
