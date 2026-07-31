@@ -31,7 +31,11 @@ function renderSettings() {
     groupEl.appendChild(header);
 
     group.controls.forEach((control) => {
-      state.values[control.id] = control.default;
+      // Only seed the default on first render — re-renders (e.g. after
+      // applying a preset) must NOT stomp on values that were just set.
+      if (!(control.id in state.values)) {
+        state.values[control.id] = control.default;
+      }
       const row = buildControlRow(control, group.tier);
       groupEl.appendChild(row);
     });
@@ -81,7 +85,7 @@ function buildControlRow(control, tier) {
     input.min = control.min;
     input.max = control.max;
     input.step = control.step;
-    input.value = control.default;
+    input.value = state.values[control.id] ?? control.default;
     input.addEventListener("input", () => {
       state.values[control.id] = Number(input.value);
       updateValueDisplay();
@@ -96,7 +100,7 @@ function buildControlRow(control, tier) {
       const optionEl = document.createElement("option");
       optionEl.value = opt.value;
       optionEl.textContent = opt.label;
-      if (opt.value === control.default) optionEl.selected = true;
+      if (opt.value === (state.values[control.id] ?? control.default)) optionEl.selected = true;
       select.appendChild(optionEl);
     });
     controlWrap.appendChild(select);
@@ -137,10 +141,11 @@ function buildControlRow(control, tier) {
     select.addEventListener("mouseenter", () => showExplain(control));
   } else if (control.type === "toggle") {
     const toggle = document.createElement("div");
-    toggle.className = "toggle" + (control.default ? " on" : "");
+    const currentOn = state.values[control.id] ?? control.default;
+    toggle.className = "toggle" + (currentOn ? " on" : "");
     toggle.tabIndex = 0;
     toggle.setAttribute("role", "switch");
-    toggle.setAttribute("aria-checked", String(control.default));
+    toggle.setAttribute("aria-checked", String(currentOn));
     const flip = () => {
       const on = !toggle.classList.contains("on");
       toggle.classList.toggle("on", on);
@@ -160,7 +165,7 @@ function buildControlRow(control, tier) {
     const input = document.createElement("input");
     input.type = "text";
     input.placeholder = control.placeholder || "";
-    input.value = control.default || "";
+    input.value = state.values[control.id] ?? control.default ?? "";
     input.addEventListener("input", () => {
       state.values[control.id] = input.value;
       updateRunButton();
@@ -299,7 +304,47 @@ function setFile(file) {
   const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
   document.getElementById("file-details").textContent = `${sizeMB} MB · ${file.type || "unknown type"}`;
   document.getElementById("file-type-icon").textContent = file.type.startsWith("audio") ? "♪" : "▶";
+
+  autoSelectFormat(file);
   updateRunButton();
+}
+
+// Map common MIME types / extensions to one of our output format options,
+// so dropping an mp3 defaults the output format select to mp3, etc.
+// Only auto-switches if the dropped file's type maps to a real option —
+// leaves the format alone otherwise (e.g. unknown/exotic types).
+const FORMAT_MIME_MAP = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/flac": "flac",
+  "audio/x-flac": "flac",
+  "audio/aac": "aac",
+  "audio/mp4": "aac",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+};
+const FORMAT_EXT_MAP = {
+  mp3: "mp3", wav: "wav", flac: "flac", aac: "aac",
+  mp4: "mp4", webm: "webm", mov: "mov", m4a: "aac",
+};
+
+function autoSelectFormat(file) {
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  const detected = FORMAT_MIME_MAP[file.type] || FORMAT_EXT_MAP[ext];
+  if (!detected) return;
+
+  state.values.format = detected;
+
+  // Reflect it in the actual <select> if it's already rendered, and
+  // refresh anything that depends on the format (audio bitrate gating).
+  const row = document.querySelector('.setting-row[data-control-id="format"]');
+  const select = row ? row.querySelector("select") : null;
+  if (select) select.value = detected;
+  syncAudioBitrateAvailability();
 }
 
 function updateRunButton() {
@@ -316,28 +361,35 @@ function updateRunButton() {
 function buildTransformation() {
   const v = state.values;
   const parts = [];
+  const isAudioOnlyFormat = ["mp3", "wav", "flac", "aac"].includes(v.format);
 
   // quality (0-100 UI) -> Cloudinary q_ param (also 0-100, or q_auto)
   if (v.quality !== undefined && v.quality !== "") parts.push(`q_${v.quality}`);
 
-  // Bitrate: Cloudinary's br_ av is officially "not supported by our SDKs"
+  // Bitrate: Cloudinary's br_av is officially "not supported by our SDKs"
   // and its hash-style syntax is fragile over HTTP. Simplest robust
-  // approach: use a single br_ value, which Cloudinary applies to both
-  // video and audio when only one is given. Prefer the video bitrate
-  // since it dominates file size; fall back to audio bitrate if that's
-  // the only one set.
-  if (v.videoBitrate) {
+  // approach: use a single br_ value, which Cloudinary applies to
+  // whichever stream(s) actually exist. For audio-only output formats
+  // there IS no video stream, so we must use the audio bitrate here —
+  // otherwise the leftover default video bitrate silently wins every time.
+  const audioBitrateValue = v.audioBitrate && v.audioBitrate !== "custom" ? v.audioBitrate : null;
+
+  if (isAudioOnlyFormat) {
+    if (audioBitrateValue) parts.push(`br_${audioBitrateValue}k`);
+  } else if (v.videoBitrate) {
     parts.push(`br_${v.videoBitrate}k`);
-  } else if (v.audioBitrate && v.audioBitrate !== "custom") {
-    parts.push(`br_${v.audioBitrate}k`);
+  } else if (audioBitrateValue) {
+    parts.push(`br_${audioBitrateValue}k`);
   }
 
-  if (v.scale) parts.push(`h_${v.scale},c_limit`);
-  if (v.fps) parts.push(`fps_${v.fps}`);
+  if (!isAudioOnlyFormat) {
+    if (v.scale) parts.push(`h_${v.scale},c_limit`);
+    if (v.fps) parts.push(`fps_${v.fps}`);
 
-  if (v.videoCodec && v.videoCodec !== "auto") {
-    const codecMap = { h264: "h264", h265: "h265", vp9: "vp9", vp8: "vp8", av1: "av1" };
-    parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
+    if (v.videoCodec && v.videoCodec !== "auto") {
+      const codecMap = { h264: "h264", h265: "h265", vp9: "vp9", vp8: "vp8", av1: "av1" };
+      parts.push(`vc_${codecMap[v.videoCodec] || v.videoCodec}`);
+    }
   }
 
   // Audio codec is its own param — no bitrate suffix, that caused the
