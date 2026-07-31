@@ -13,6 +13,14 @@
   <a class="back" href="https://sutkutusuoyunu.github.io/">← Back</a>
 
   <header class="hero">
+    <div class="account-bar">
+      <a id="account-login-btn" class="ghost account-login" href="https://sutkutusuoyunu.github.io/login/?next=https://sutkutusuoyunu.github.io/ffmpeg/">Giriş Yap</a>
+      <div id="account-user-pill" class="account-pill">
+        <img id="account-user-avatar" src="" alt="">
+        <span id="account-user-nick" class="account-nick"></span>
+        <button id="account-logout-btn" class="ghost">Çıkış</button>
+      </div>
+    </div>
     <h1 class="grad">FFmpeg</h1>
     <p class="eyebrow">Video &amp; Audio Compressor</p>
     <div class="hero-divider"></div>
@@ -106,6 +114,14 @@
     </div>
   </div>
 
+  <!-- MY FILES (signed-in users only) -->
+  <div class="panel" id="my-files-panel">
+    <h2>My Files</h2>
+    <p class="empty hidden" id="my-files-locked" style="padding:6px 0;">Dönüştürdüğün dosyaları kaydetmek ve 30 dakika içinde geri dönmek için <a href="https://sutkutusuoyunu.github.io/login/?next=https://sutkutusuoyunu.github.io/ffmpeg/" style="color:var(--grad-c);">giriş yap</a>.</p>
+    <ul class="my-files-list" id="my-files-list"></ul>
+    <div class="empty hidden" id="my-files-empty">Henüz kaydedilmiş dosya yok. Bir dosyayı dönüştürünce burada listelenecek.</div>
+  </div>
+
   <footer>
     <p>Runs on Cloudinary transformations, signed via a Cloudflare Worker. No files retained beyond 30 minutes.</p>
   </footer>
@@ -149,7 +165,8 @@
 })();
 </script>
 
-<script src="presets.js"></script>
-<script src="app.js"></script>
+<script src="presets.js?v=2"></script>
+<script src="app.js?v=2"></script>
+<script type="module" src="account.js"></script>
 </body>
 </html>
