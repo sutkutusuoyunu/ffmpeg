@@ -50,6 +50,7 @@ function renderSettings() {
 function buildControlRow(control, tier) {
   const row = document.createElement("div");
   row.className = "setting-row" + (tier === "advanced" ? " advanced-only" : "");
+  row.dataset.controlId = control.id;
 
   const name = document.createElement("div");
   name.className = "setting-name";
@@ -129,6 +130,7 @@ function buildControlRow(control, tier) {
         state.values[control.id] = select.value;
       }
       if (control.id === "preset") applyPreset(select.value);
+      if (control.id === "format") syncAudioBitrateAvailability();
       updateRunButton();
     });
     select.addEventListener("focus", () => showExplain(control));
@@ -185,6 +187,30 @@ function applyPreset(presetKey) {
   });
   renderSettings(); // re-render to reflect bundled values in controls
   syncModeClass();
+  syncAudioBitrateAvailability();
+}
+
+// Audio bitrate can only be set independently from video bitrate for
+// audio-only output formats (mp3/wav/flac/aac). For video formats,
+// Cloudinary's simple br_ parameter is shared between streams and the
+// video bitrate always wins, so the control would silently do nothing —
+// better to disable it and say why than let it look like it's working.
+const AUDIO_ONLY_FORMATS = ["mp3", "wav", "flac", "aac"];
+
+function syncAudioBitrateAvailability() {
+  const row = document.querySelector('.setting-row[data-control-id="audioBitrate"]');
+  if (!row) return;
+  const isAudioOnly = AUDIO_ONLY_FORMATS.includes(state.values.format);
+
+  const select = row.querySelector("select");
+  const customInput = row.querySelector('input[type="number"]');
+  row.classList.toggle("row-disabled", !isAudioOnly);
+  if (select) select.disabled = !isAudioOnly;
+  if (customInput) customInput.disabled = !isAudioOnly;
+
+  row.title = isAudioOnly
+    ? ""
+    : "Only applies to audio-only output formats (MP3/WAV/FLAC/AAC) — video bitrate takes priority for video formats.";
 }
 
 /* ---------------------------------------------------------
@@ -479,3 +505,4 @@ function startCountdown(totalSeconds) {
 --------------------------------------------------------- */
 renderSettings();
 syncModeClass();
+syncAudioBitrateAvailability();
