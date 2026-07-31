@@ -204,6 +204,10 @@ button.ghost:hover{ color:var(--danger); border-color:var(--danger); }
 body.mode-advanced .setting-row.advanced-only{ display:grid; }
 
 .setting-name{ font-size:13px; color:var(--text-dim); font-weight:600; }
+
+.setting-row.row-disabled{ opacity:.45; cursor:not-allowed; }
+.setting-row.row-disabled select,
+.setting-row.row-disabled input{ cursor:not-allowed; }
 .setting-value{ font-family:var(--font-mono); font-size:12px; color:var(--grad-c); text-align:right; }
 
 input[type="range"]{
