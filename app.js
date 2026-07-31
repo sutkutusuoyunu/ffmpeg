@@ -643,9 +643,11 @@ function showResult(url, uploadResult) {
 
 function showError(message) {
   document.getElementById("progress-wrap").hidden = true;
-  document.getElementById("error-card").hidden = false;
+  const errorCard = document.getElementById("error-card");
+  errorCard.hidden = false;
   document.getElementById("error-body").textContent = message;
   document.getElementById("run-btn").disabled = false;
+  errorCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function startCountdown(totalSeconds) {

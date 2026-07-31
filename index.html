@@ -30,6 +30,12 @@
     </div>
   </header>
 
+  <!-- ERROR (moved to top so it's visible immediately, no scrolling needed) -->
+  <div class="error-card error-card-top" id="error-card" hidden>
+    <p class="error-title">Something went wrong</p>
+    <p class="error-body" id="error-body">—</p>
+  </div>
+
   <!-- INPUT -->
   <div class="panel">
     <h2>Input</h2>
@@ -108,11 +114,6 @@
         <span class="countdown-dot"></span>
         <span id="countdown-text">Deletes automatically in 30:00</span>
       </div>
-    </div>
-
-    <div class="error-card" id="error-card" hidden>
-      <p class="error-title">Something went wrong</p>
-      <p class="error-body" id="error-body">—</p>
     </div>
   </div>
 
