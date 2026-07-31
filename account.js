@@ -140,14 +140,21 @@ function subscribeToFiles(uid) {
     } else {
       filesEmpty.hidden = true;
       snap.forEach((d) => {
-        // Prune anything already past 30 minutes instead of showing a
-        // dead link — the Cloudinary asset is gone by now anyway.
-        const createdMs = d.data().createdAt && d.data().createdAt.toMillis ? d.data().createdAt.toMillis() : 0;
-        if (Date.now() - createdMs >= THIRTY_MIN_MS) {
-          deleteDoc(doc(db, "users", uid, "files", d.id)).catch(() => {});
-          return;
+        const data = d.data();
+        const hasResolvedTimestamp = data.createdAt && typeof data.createdAt.toMillis === "function";
+
+        // serverTimestamp() resolves to null in the very first local
+        // snapshot Firestore delivers, before the server has confirmed
+        // the real time — that's not "old", it's brand new. Only prune
+        // once we actually have a real timestamp to check against.
+        if (hasResolvedTimestamp) {
+          const createdMs = data.createdAt.toMillis();
+          if (Date.now() - createdMs >= THIRTY_MIN_MS) {
+            deleteDoc(doc(db, "users", uid, "files", d.id)).catch(() => {});
+            return;
+          }
         }
-        filesList.appendChild(renderFileRow(d.id, d.data()));
+        filesList.appendChild(renderFileRow(d.id, data));
       });
     }
     startTicking();
