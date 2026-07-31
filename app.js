@@ -532,20 +532,25 @@ function waitForTransformationReady(url, { timeoutMs = 10 * 60 * 1000, pollInter
       }
       updateBar();
 
-      fetch(url, { method: "HEAD", cache: "no-store" })
+      fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Range: "bytes=0-0" }, // we only need to confirm readiness, not download the whole file
+      })
         .then((res) => {
-          if (res.ok) {
+          // 200 (full content) or 206 (partial content, range honored) both
+          // mean Cloudinary actually served real transcoded bytes — that's
+          // the only reliable signal the encode is done. A HEAD request can
+          // return 200 immediately without Cloudinary having done the work.
+          if (res.ok || res.status === 206) {
             succeed();
           } else if (res.status === 423 || res.status === 202) {
-            // Still processing — Cloudinary-style "come back later" statuses.
             setTimeout(attempt, pollIntervalMs);
           } else {
             fail(new Error(`Encoding failed (server returned ${res.status}). Try adjusting your settings.`));
           }
         })
         .catch(() => {
-          // Transient network hiccup (or the browser timing out a long-held
-          // request) — don't give up immediately, just retry.
           setTimeout(attempt, pollIntervalMs);
         });
     };
