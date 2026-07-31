@@ -537,6 +537,19 @@ function showResult(url, uploadResult) {
     : "Ready";
 
   startCountdown(30 * 60);
+
+  // If signed in (see account.js), save this to "My Files" so it's not
+  // lost on refresh — safe to skip silently for anonymous users, since
+  // window.FFAccount only exists once account.js has loaded and the
+  // save itself is a no-op when nobody's signed in.
+  if (window.FFAccount) {
+    window.FFAccount.saveFileRecord({
+      url,
+      filename: state.file ? state.file.name : "dosya",
+      format: state.values.format || "mp4",
+      sizeBytes: uploadResult.bytes || null,
+    });
+  }
 }
 
 function showError(message) {
