@@ -380,6 +380,46 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus{
 
 footer{ text-align:center; font-size:12px; color:var(--text-faint); margin-top:44px; }
 
+/* ============================================================
+   ACCOUNT BAR (login / user pill)
+   ============================================================ */
+.account-bar{ display:flex; justify-content:flex-end; margin-bottom:10px; }
+.account-login{ font-size:12px; text-decoration:none; padding:8px 14px; }
+.account-pill{
+  display:none; align-items:center; gap:8px;
+  background:var(--panel-2); border:1px solid var(--line);
+  padding:5px 8px 5px 5px; border-radius:999px;
+}
+.account-pill.show{ display:flex; }
+.account-pill img{
+  width:26px; height:26px; border-radius:50%; object-fit:cover;
+  background:var(--panel); border:1px solid var(--line);
+}
+.account-nick{
+  font-size:12px; font-weight:600; color:var(--text-dim);
+  max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.account-pill button.ghost{ font-size:11px; padding:5px 10px; }
+
+/* ============================================================
+   MY FILES
+   ============================================================ */
+.my-files-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.my-file-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  border:1px solid var(--line); border-radius:10px;
+  background:var(--panel-2); padding:12px 14px;
+}
+.my-file-row.expired{ opacity:.45; }
+.my-file-name{
+  font-size:13.5px; font-weight:600; color:var(--text);
+  max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.my-file-meta{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+.my-file-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.my-file-actions .primary-btn{ padding:7px 12px; font-size:11px; }
+.my-file-actions button.ghost{ padding:6px 9px; font-size:12px; }
+
 @media (max-width:640px){
   .setting-row{ grid-template-columns:120px 1fr 54px; }
 }
