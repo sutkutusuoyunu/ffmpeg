@@ -137,7 +137,7 @@ const SETTINGS_SCHEMA = [
         customMax: 512,
         explain: {
           title: "Audio bitrate",
-          body: "Data rate for the audio track. 128kbps is transparent for most music on typical speakers/earbuds; 64–96kbps is plenty for spoken word. This is independent of the video bitrate above.",
+          body: "Data rate for the audio track. 128kbps is transparent for most music on typical speakers/earbuds; 64–96kbps is plenty for spoken word. Note: for video output formats, the video bitrate above takes priority and this control is disabled — it only applies when the output format is audio-only (MP3/WAV/FLAC/AAC).",
           flag: "-b:a 128k",
         },
       },
