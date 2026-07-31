@@ -270,6 +270,36 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus{
 .toggle.on::after{ transform:translateX(18px); background:#fff; }
 
 /* ============================================================
+   SETTINGS + EXPLAIN LAYOUT
+   Side-by-side with a sticky explain column on wide viewports, so the
+   explanation stays in view while scrolling/adjusting settings instead
+   of sitting below the fold. Stacks normally on narrow viewports.
+   ============================================================ */
+.settings-explain-row{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  margin-bottom:18px;
+}
+.settings-explain-row .panel{ margin-bottom:0; }
+
+@media (min-width:860px){
+  .settings-explain-row{
+    flex-direction:row;
+    align-items:flex-start;
+  }
+  .settings-col{ flex:1 1 auto; min-width:0; }
+  .explain-col{
+    flex:0 0 300px;
+    position:sticky;
+    top:20px;
+    align-self:flex-start;
+    max-height:calc(100vh - 40px);
+    overflow-y:auto;
+  }
+}
+
+/* ============================================================
    EXPLAIN
    ============================================================ */
 .explain-panel{

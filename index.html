@@ -57,23 +57,25 @@
     <p class="expiry-note">Files are processed and auto-deleted 30 minutes after upload. Nothing is stored long-term.</p>
   </div>
 
-  <!-- SETTINGS -->
-  <div class="panel">
-    <h2>Settings</h2>
-    <div class="settings-grid" id="settings-grid">
-      <!-- populated by app.js -->
+  <!-- SETTINGS + EXPLAIN (side-by-side on wide screens so the explanation
+       never scrolls out of view while you're adjusting settings) -->
+  <div class="settings-explain-row">
+    <div class="panel settings-col">
+      <h2>Settings</h2>
+      <div class="settings-grid" id="settings-grid">
+        <!-- populated by app.js -->
+      </div>
     </div>
-  </div>
 
-  <!-- EXPLAIN -->
-  <div class="panel">
-    <h2>What This Does</h2>
-    <div class="explain-panel" id="explain-panel">
-      <p class="explain-title" id="explain-title">Hover or focus a control</p>
-      <p class="explain-body" id="explain-body">Explanations for whatever setting you're touching will show up here — what it changes, the range of sane values, and when you'd actually want to adjust it.</p>
-      <div class="explain-flag" id="explain-flag" hidden>
-        <span class="flag-label">ffmpeg equivalent</span>
-        <code id="explain-flag-code">-crf 23</code>
+    <div class="panel explain-col" id="explain-container">
+      <h2>What This Does</h2>
+      <div class="explain-panel" id="explain-panel">
+        <p class="explain-title" id="explain-title">Hover or focus a control</p>
+        <p class="explain-body" id="explain-body">Explanations for whatever setting you're touching will show up here — what it changes, the range of sane values, and when you'd actually want to adjust it.</p>
+        <div class="explain-flag" id="explain-flag" hidden>
+          <span class="flag-label">ffmpeg equivalent</span>
+          <code id="explain-flag-code">-crf 23</code>
+        </div>
       </div>
     </div>
   </div>
